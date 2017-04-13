@@ -1,39 +1,9 @@
 function draw() {
   let ctx;
 
-
-
   const canvas = document.getElementById('boxCanvas');
   if (canvas.getContext) {
     ctx = canvas.getContext('2d');
-  }
-
-  const createGhosts = function (numGhosts) {
-    const ghosts = [];
-
-    for(let i = 0; i < numGhosts; i++) {
-      ghostArray[i] = Ghost(20 + Math.random() * canvas.width - 20,
-                   20 + Math.random() * canvas.height - 20,
-                   Math.random() - 0.5, 
-                   Math.random() - 0.5, 
-                   ctx);
-    }
-    return ghosts;
-  }
-
-  const updateGhosts = function (ghosts, fan) {
-    ghosts.forEach(function(g) {
-      g.updateSpeed();
-      g.move();
-      if (checkCollision(g.getPosition(), fan.getBounds())) {
-        //g.setColor("rgba(255, 200, 200, .5)");
-        g.setMood('sad');
-      } else {
-        //g.setColor("rgba(255, 255, 255, 0.5)");
-        g.setMood('happy');
-      }
-    });
-    return ghosts;
   }
 
   const checkCollision = function (ghost, box) {
@@ -42,12 +12,6 @@ function draw() {
                       (ghost.y > box.y) &&
                       (ghost.y < box.y + box.height));
     return collision;
-  }
-
-  const drawGhosts = function (ghosts) {
-    ghosts.forEach(function (g) {
-      g.render();
-    });
   }
 
   const Fan = function (X, Y, CTX) {
@@ -92,8 +56,7 @@ function draw() {
   const Ghosts = (function (numGhosts, ctx) {    
     const module = {};
 
-//TODO: decouple rate at which ghosts oscillate from the length of this array-
-//make a proper pixels per frame variable or something and use these as reference values
+    const oscillationRate = 3;  //cycles per second
     const moveLookup = (function(steps) {
       const lookup = [];
       let index = 0;
@@ -101,7 +64,7 @@ function draw() {
         lookup[index++] = Math.sin(i);
       }
       return lookup;
-    })(80);
+    })(oscillationRate * 60);
 
     const ghostArray = [];
     const ghostColor = "rgba(255, 255, 255, 0.6)";
@@ -110,11 +73,14 @@ function draw() {
     const moveGhost = function (ghost) {
       //set new position, referenced to current position in pixels
       ghost.position.x += ghost.speed.x;
+      //TODO: what's that *.25 do??? Some scaling value? Sheesh.
       ghost.position.y += (moveLookup[ghost.moveIndex++ % moveLookup.length]) * .25 + ghost.speed.y;
-
-      if ((Math.abs(ghost.destination.x - ghost.position.x) < 10) && (Math.abs(ghost.destination.y - ghost.position.y) < 2)) {
-        ghost.destination.x = Math.random() * canvas.width;
-        ghost.destination.y = canvas.height / 2 + Math.random() * canvas.height / 2;
+      //don't update player destination
+      if (ghost.destination){
+        if ((Math.abs(ghost.destination.x - ghost.position.x) < 10) && (Math.abs(ghost.destination.y - ghost.position.y) < 2)) {
+          ghost.destination.x = Math.random() * canvas.width;
+          ghost.destination.y = canvas.height / 2 + Math.random() * canvas.height / 2;
+        }
       }
       if (++ghost.moveIndex === moveLookup.length) {
         ghost.moveIndex = 0;
@@ -133,6 +99,11 @@ function draw() {
       } else {
         ghost.speed.x = 0.001 * (ghost.destination.x - ghost.position.x);
         ghost.speed.y = 0.001 * (ghost.destination.y - ghost.position.y); 
+        if ((Math.abs(player.position.x - ghost.position.x) < 70) && (Math.abs(player.position.y - ghost.position.y) < 100)) {
+          ghost.speed.x -= 0.008 * (player.position.x - ghost.position.x);
+          ghost.speed.y -= 0.008 * (player.position.y - ghost.position.y);
+
+        }
       }
     };
 
@@ -141,8 +112,10 @@ function draw() {
       const y = ghost.position.y;
       // const w = size.width;
       // const h = size.height;
-      ctx.fillStyle = ghostColor;
-      
+      if (!(ctx.fillStyle = ghost.color)) {
+        ctx.fillStyle = ghostColor;
+      }
+
       //draw body
       ctx.beginPath();
       ctx.moveTo(x, y + 10);
@@ -176,14 +149,6 @@ function draw() {
       }
     };
 
-    module.update = function () {
-      ghostArray.forEach(function updateAndDrawGhosts (g) {
-        updateSpeed(g);
-        moveGhost(g);
-        drawGhost(g);
-      });
-    }
-
 
     const createNewGhost = function(X, Y, xSpeed, ySpeed, rightEye, leftEye) {
       const ghost = {
@@ -208,14 +173,82 @@ function draw() {
       return ghost;
     }
 
+    const createPlayer = function (X, Y, rightEye, leftEye) {
+      const player = {
+        hasRightEye : rightEye,
+        hasLeftEye : leftEye,
+        color : 'rgba(255, 220, 220, 0.6)',
+        maxSpeed : (50 / 60),
+        speedIncrement : 0.06,
+        mood : 'happy',
+        moveIndex : Math.floor(Math.random() * moveLookup.length),
+        position : {
+          x : X,
+          y : Y
+        },
+        speed : {
+          //pixels to move per frame; negative values change direction
+          x : 0,
+          y : 0
+        }
+      }
+      return player;
+    }
+
+    const updatePlayerSpeed = function (player) {
+      //slowly come to a halt if no movement buttons are pressed
+      player.speed.x *= 0.99;
+      player.speed.y *= 0.99;
+    }
+
     for (let i = 0; i < numGhosts; i++) {
       ghostArray[i] = createNewGhost(
-                  20 + Math.random() * canvas.width - 20,
-                  20 + Math.random() * canvas.height - 20,
+                  20 + Math.random() * (canvas.width - 40),
+                  20 + Math.random() * (canvas.height - 40),
                   Math.random() - 0.5, 
                   Math.random() - 0.5, 
                   (Math.random() < 0.1 ? false : true),
                   (Math.random() < 0.1 ? false : true));
+    }
+
+    const player = createPlayer(
+                  canvas.width / 2 - 20, 
+                  canvas.height - 50,
+                  (Math.random() < 0.1 ? false : true),
+                  (Math.random() < 0.1 ? false : true));
+
+    document.addEventListener('keydown', function(event) {
+      event.preventDefault();
+
+      switch (event.keyCode) {
+        case 37:
+          if (player.speed.x > (-1 * player.maxSpeed))
+            player.speed.x -= player.speedIncrement;
+          break;
+        case 38:
+          if (player.speed.y > (-1 * player.maxSpeed))        
+            player.speed.y -= player.speedIncrement;
+          break;
+        case 39:
+          if (player.speed.x < player.maxSpeed)        
+            player.speed.x += player.speedIncrement;
+          break;
+        case 40: 
+          if (player.speed.y < player.maxSpeed)
+            player.speed.y += player.speedIncrement;
+          break;
+      }
+    });
+
+    module.update = function () {
+      //updatePlayerSpeed(player);
+      moveGhost(player);
+      drawGhost(player);
+      ghostArray.forEach(function updateAndDrawGhosts (g) {
+        updateSpeed(g);
+        moveGhost(g);
+        drawGhost(g);
+      });
     }
 
     return module;
