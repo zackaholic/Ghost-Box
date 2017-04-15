@@ -74,10 +74,10 @@ function draw() {
       //set new position, referenced to current position in pixels
       ghost.position.x += ghost.speed.x;
       //TODO: what's that *.25 do??? Some scaling value? Sheesh.
-      ghost.position.y += (moveLookup[ghost.moveIndex++ % moveLookup.length]) * .25 + ghost.speed.y;
+      ghost.position.y += ghost.speed.y + (moveLookup[ghost.moveIndex++ % moveLookup.length]) * .25;
       //don't update player destination
       if (ghost.destination){
-        if ((Math.abs(ghost.destination.x - ghost.position.x) < 10) && (Math.abs(ghost.destination.y - ghost.position.y) < 2)) {
+        if ((Math.abs(ghost.destination.x - ghost.position.x) < 10) && (Math.abs(ghost.destination.y - ghost.position.y) < 10)) {
           ghost.destination.x = Math.random() * canvas.width;
           ghost.destination.y = canvas.height / 2 + Math.random() * canvas.height / 2;
         }
@@ -88,24 +88,80 @@ function draw() {
     };
 
     const updateSpeed = function (ghost) {
-      if (false) {
-        //if fan is on ghosts near the middle get sucked up
-        const fanBounds = fan.getBounds();
-        //speed.x += 0.0001 * (canvas.width / 2 - position.x);
-        if ((position.x > fanBounds.x + 20) && (position.x < fanBounds.x + fanBounds.width - 20)){
-          speed.y -= 3; 
-          speed.x += 0.005 * (canvas.width / 2 - position.x);
-        }
-      } else {
-        ghost.speed.x = 0.001 * (ghost.destination.x - ghost.position.x);
-        ghost.speed.y = 0.001 * (ghost.destination.y - ghost.position.y); 
-        if ((Math.abs(player.position.x - ghost.position.x) < 70) && (Math.abs(player.position.y - ghost.position.y) < 100)) {
-          ghost.speed.x -= 0.008 * (player.position.x - ghost.position.x);
-          ghost.speed.y -= 0.008 * (player.position.y - ghost.position.y);
+      const destinationSpeed = {
+        x : 0,
+        y : 0        
+      };
+      
+      const avoidPlayerSpeed = {
+        x : 0,
+        y : 0
+      };
 
-        }
+      destinationSpeed.x = 0.0001 * (ghost.destination.x - ghost.position.x);
+      destinationSpeed.y = 0.0001 * (ghost.destination.y - ghost.position.y) 
+
+      if ((Math.abs(player.position.x - ghost.position.x) < 100) && (Math.abs(player.position.y - ghost.position.y) < 100)) {
+        avoidPlayerSpeed.x = 0.001 * (player.position.x - ghost.position.x);
+        avoidPlayerSpeed.y = 0.001 * (player.position.y - ghost.position.y);
       }
+
+      avoidPlayerSpeed.x = Math.abs(avoidPlayerSpeed.x) > 0.2
+                      ? Math.sign(avoidPlayerSpeed.x) * 0.2
+                      : avoidPlayerSpeed.x;
+
+      avoidPlayerSpeed.y = Math.abs(avoidPlayerSpeed.y) > 0.2
+                      ? Math.sign(avoidPlayerSpeed.y) * 0.2
+                      : avoidPlayerSpeed.y;
+
+      const fanSpeed = {
+//        const fanBounds = fan.getBounds();
+
+        // if ((position.x > fanBounds.x + 20) && (position.x < fanBounds.x + fanBounds.width - 20)){
+        //   speed.y -= 3; 
+        //   speed.x += 0.005 * (canvas.width / 2 - position.x);
+        // }      
+      }
+
+      destinationSpeed.x = Math.abs(destinationSpeed.x) > 0.2
+                      ? Math.sign(destinationSpeed.x) * 0.2
+                      : destinationSpeed.x;
+
+      destinationSpeed.y = Math.abs(destinationSpeed.y) > 0.2
+                      ? Math.sign(destinationSpeed.y) * 0.2
+                      : destinationSpeed.y;
+
+      ghost.speed.x += destinationSpeed.x - avoidPlayerSpeed.x;
+      ghost.speed.y += destinationSpeed.y - avoidPlayerSpeed.y;
+
+      ghost.speed.x = Math.abs(ghost.speed.x) > 0.3
+                      ? Math.sign(ghost.speed.x) * 0.3
+                      : ghost.speed.x;
+
+      ghost.speed.y = Math.abs(ghost.speed.y) > 0.3
+                      ? Math.sign(ghost.speed.y) * 0.3
+                      : ghost.speed.y;
+
     };
+
+    const updatePlayerSpeed = function () {
+      if (player.input.left) {
+        player.speed.x -= player.speedIncrement;
+        //player.speed.x = Math.min(player.speed.x, -1 * player.maxSpeed)
+      }
+      if (player.input.right) {
+        player.speed.x += player.speedIncrement;
+        //player.speed.x = Math.max(player.speed.x, player.maxSpeed)
+      }
+      if (player.input.up) {
+        player.speed.y -= player.speedIncrement;
+        //player.speed.y = Math.min(player.speed.y, -1 * player.maxSpeed)
+      }
+      if (player.input.down) {
+        player.speed.y += player.speedIncrement;
+        //player.speed.y = Math.max(player.speed.y, player.maxSpeed)
+      }
+    }            
 
     const drawGhost = function (ghost) {
       const x = ghost.position.x;
@@ -178,14 +234,23 @@ function draw() {
         hasRightEye : rightEye,
         hasLeftEye : leftEye,
         color : 'rgba(255, 220, 220, 0.6)',
-        maxSpeed : (50 / 60),
-        speedIncrement : 0.06,
+        maxSpeed : (30 / 60),
+        speedIncrement : 0.01,
         mood : 'happy',
         moveIndex : Math.floor(Math.random() * moveLookup.length),
+        
+        input : {
+          left : false,
+          right : false,
+          up : false,
+          down : false
+        },
+
         position : {
           x : X,
           y : Y
         },
+        
         speed : {
           //pixels to move per frame; negative values change direction
           x : 0,
@@ -195,25 +260,20 @@ function draw() {
       return player;
     }
 
-    const updatePlayerSpeed = function (player) {
-      //slowly come to a halt if no movement buttons are pressed
-      player.speed.x *= 0.99;
-      player.speed.y *= 0.99;
-    }
 
     for (let i = 0; i < numGhosts; i++) {
       ghostArray[i] = createNewGhost(
-                  20 + Math.random() * (canvas.width - 40),
-                  20 + Math.random() * (canvas.height - 40),
-                  Math.random() - 0.5, 
-                  Math.random() - 0.5, 
+                  40 + Math.random() * (canvas.width - 40),
+                  canvas.height / 2 + Math.random() * (canvas.height / 2),
+                  0, 
+                  0, 
                   (Math.random() < 0.1 ? false : true),
                   (Math.random() < 0.1 ? false : true));
     }
 
     const player = createPlayer(
                   canvas.width / 2 - 20, 
-                  canvas.height - 50,
+                  canvas.height - 100,
                   (Math.random() < 0.1 ? false : true),
                   (Math.random() < 0.1 ? false : true));
 
@@ -222,28 +282,44 @@ function draw() {
 
       switch (event.keyCode) {
         case 37:
-          if (player.speed.x > (-1 * player.maxSpeed))
-            player.speed.x -= player.speedIncrement;
+          player.input.left = true;
           break;
         case 38:
-          if (player.speed.y > (-1 * player.maxSpeed))        
-            player.speed.y -= player.speedIncrement;
+          player.input.up = true;
           break;
         case 39:
-          if (player.speed.x < player.maxSpeed)        
-            player.speed.x += player.speedIncrement;
+          player.input.right = true;
           break;
         case 40: 
-          if (player.speed.y < player.maxSpeed)
-            player.speed.y += player.speedIncrement;
+          player.input.down = true;
+          break;
+      }
+    });
+
+    document.addEventListener('keyup', function(event) {
+      event.preventDefault();
+
+      switch (event.keyCode) {
+        case 37:
+          player.input.left = false;
+          break;
+        case 38:
+          player.input.up = false;
+          break;
+        case 39:
+          player.input.right = false;
+          break;
+        case 40: 
+          player.input.down = false;
           break;
       }
     });
 
     module.update = function () {
-      //updatePlayerSpeed(player);
+      updatePlayerSpeed();
       moveGhost(player);
       drawGhost(player);
+
       ghostArray.forEach(function updateAndDrawGhosts (g) {
         updateSpeed(g);
         moveGhost(g);
@@ -252,7 +328,7 @@ function draw() {
     }
 
     return module;
-  })(20, canvas.getContext('2d'));
+  })(60, canvas.getContext('2d'));
 
   canvas.addEventListener('mousedown', function() {
     fan.setOn(true);
