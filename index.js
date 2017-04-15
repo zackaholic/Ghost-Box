@@ -6,14 +6,6 @@ function draw() {
     ctx = canvas.getContext('2d');
   }
 
-  const checkCollision = function (ghost, box) {
-    const collision = ((ghost.x > box.x) &&
-                      (ghost.x < box.x + box.width) &&
-                      (ghost.y > box.y) &&
-                      (ghost.y < box.y + box.height));
-    return collision;
-  }
-
   const Fan = function (X, Y, CTX) {
     const fan = {};
 
@@ -162,6 +154,26 @@ function draw() {
         //player.speed.y = Math.max(player.speed.y, player.maxSpeed)
       }
     }            
+
+    const checkCollisions = function(ghost) {
+      if (ghost.position.x >= canvas.width - 50) {
+        ghost.speed.x = 0;
+        ghost.position.x = canvas.width - 50;
+      }
+      if (ghost.position.x <= 0) {
+        ghost.speed.x = 0;
+        ghost.position.x = 0;
+      }
+      if (ghost.position.y >= canvas.height - 50) {
+        ghost.speed.y = 0;
+        ghost.position.y = canvas.height - 50;
+      }
+      if (ghost.position.y <= 15) {
+        ghost.speed.y = 0;
+        ghost.position.y = 15;
+      }
+
+    }
 
     const drawGhost = function (ghost) {
       const x = ghost.position.x;
@@ -318,11 +330,13 @@ function draw() {
     module.update = function () {
       updatePlayerSpeed();
       moveGhost(player);
+      checkCollisions(player);
       drawGhost(player);
 
       ghostArray.forEach(function updateAndDrawGhosts (g) {
         updateSpeed(g);
         moveGhost(g);
+        checkCollisions(g);
         drawGhost(g);
       });
     }
