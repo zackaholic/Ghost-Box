@@ -6,7 +6,7 @@ function draw() {
     ctx = canvas.getContext('2d');
   }
 
-  const Fan = function (X, Y, CTX) {
+  const fan = (function (X, Y, CTX) {
     const fan = {};
 
     let on = false;
@@ -14,7 +14,7 @@ function draw() {
     const x = X;
     const y = Y;
     const width = 200;
-    const height = 100;
+    const height = 200;
 
     fan.isOn = function () {
       return on;
@@ -43,7 +43,7 @@ function draw() {
     }
 
     return fan;
-  }
+  })(0, 0, ctx);
 
   const Ghosts = (function (numGhosts, ctx) {    
     const module = {};
@@ -106,15 +106,6 @@ function draw() {
                       ? Math.sign(avoidPlayerSpeed.y) * 0.2
                       : avoidPlayerSpeed.y;
 
-      const fanSpeed = {
-//        const fanBounds = fan.getBounds();
-
-        // if ((position.x > fanBounds.x + 20) && (position.x < fanBounds.x + fanBounds.width - 20)){
-        //   speed.y -= 3; 
-        //   speed.x += 0.005 * (canvas.width / 2 - position.x);
-        // }      
-      }
-
       destinationSpeed.x = Math.abs(destinationSpeed.x) > 0.2
                       ? Math.sign(destinationSpeed.x) * 0.2
                       : destinationSpeed.x;
@@ -154,8 +145,55 @@ function draw() {
       }
 
     }            
+//TODO: this works with ghost collisions, but not with the fan
+    const checkCollision = function (aX, aY, aWidth, aHeight, bX, bY, bWidth, bHeight) {
+      if ((Math.abs(aX - bX) < aWidth / 2 + bWidth / 2) &&
+          (Math.abs(aY - bY) < aHeight / 2 + bHeight / 2)) {
+        return true;
+      }
+      return false;
+    }
 
-    const checkCollisions = function(ghost) {
+    const checkCollisionWithFan = function () {
+      let fanCollision = false;
+      ghostArray.forEach(function checkFanCollision(g) {
+        if (checkCollision(0, 0,
+                           200, 200,
+                           g.position.x, g.position.y,
+                           g.size.width, g.size.height)) {
+          console.log('fan collision');
+          fanCollision = true;
+          g.mood = 'sad';
+          g.speed.y -= 1;
+        }
+      });
+      if (fanCollision) {
+        //send fan command to server
+      }
+    }
+
+    const checkCollisionWithPlayer = function () {
+      let playerCollision = false;
+      ghostArray.forEach(function checkPlayerCollision(g) {
+        if (checkCollision(player.position.x, player.position.y,
+                           player.size.width + 20, player.size.height + 20,
+                           g.position.x, g.position.y,
+                           g.size.width, g.size.height)) {
+          g.mood = 'sad';
+          playerCollision = true;
+        } else {
+          g.mood = 'happy';
+        }
+      });
+      if (playerCollision) {
+        player.mood = 'happy';
+      } else {
+        player.mood = 'sad';
+      }
+    }
+
+    const checkCollisions = function (ghost) {
+      //check for collision with walls
       if (ghost.position.x >= canvas.width - ghost.size.width) {
         ghost.speed.x = 0;
         ghost.position.x = canvas.width - ghost.size.width;
@@ -172,14 +210,12 @@ function draw() {
         ghost.speed.y = 0;
         ghost.position.y = 0;
       }
-
     }
 
     const drawGhost = function (ghost) {
       const x = ghost.position.x;
       const y = ghost.position.y;
-      // const w = size.width;
-      // const h = size.height;
+
       if (!(ctx.fillStyle = ghost.color)) {
         ctx.fillStyle = ghostColor;
       }
@@ -206,7 +242,7 @@ function draw() {
       ctx.fill();
 
       //draw mouth
-      if (false) {
+      if (ghost.mood === 'happy') {
         ctx.beginPath();
         ctx.arc(x + 25, y - 7, 50, 7 * Math.PI / 12, 5 * Math.PI / 12, true);
         ctx.stroke();
@@ -230,9 +266,16 @@ function draw() {
           height : 65
         },
 
+        //set position()
+
         position : {
           x : X,
           y : Y
+        },
+
+        get center() {return {
+          x : this.position.x + this.size.width / 2, 
+          y : this.position.y + this.size.height / 2}
         },
 
         speed : {
@@ -251,6 +294,7 @@ function draw() {
 
     const createPlayer = function (X, Y, rightEye, leftEye) {
       const player = {
+        player : true,
         hasRightEye : rightEye,
         hasLeftEye : leftEye,
         color : 'rgba(255, 220, 220, 0.6)',
@@ -269,6 +313,11 @@ function draw() {
         size : {
           width : 50,
           height : 65
+        },
+        
+        get center() {return {
+          x : this.position.x + this.size.width / 2, 
+          y : this.position.y + this.size.height / 2}
         },
 
         position : {
@@ -346,16 +395,20 @@ function draw() {
       checkCollisions(player);
       drawGhost(player);
 
+      checkCollisionWithPlayer();
+        checkCollisionWithFan();
+//now this whole section needs reworking
       ghostArray.forEach(function updateAndDrawGhosts (g) {
         updateSpeed(g);
         moveGhost(g);
         checkCollisions(g);
+        //checkCollisionWithFan();
         drawGhost(g);
       });
     }
 
     return module;
-  })(60, canvas.getContext('2d'));
+  })(40, canvas.getContext('2d'));
 
   canvas.addEventListener('mousedown', function() {
     fan.setOn(true);
@@ -363,8 +416,6 @@ function draw() {
   canvas.addEventListener('mouseup', function() {
     fan.setOn(false);
   });
-
-  const fan = Fan(canvas.width / 2 - 100, 0, ctx);
 
 
   (function () {
