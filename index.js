@@ -49,7 +49,7 @@ function draw() {
     const module = {};
 
     const oscillationRate = 3;  //cycles per second
-    const moveLookup = (function(steps) {
+    const sinLookup = (function(steps) {
       const lookup = [];
       let index = 0;
       for (i = 0; i <= Math.PI * 2; i+= Math.PI * 2 / steps) {
@@ -66,15 +66,15 @@ function draw() {
       //set new position, referenced to current position in pixels
       ghost.position.x += ghost.speed.x;
       //TODO: what's that *.25 do??? Some scaling value? Sheesh.
-      ghost.position.y += ghost.speed.y + (moveLookup[ghost.moveIndex++ % moveLookup.length]) * .25;
+      ghost.position.y += ghost.speed.y + (sinLookup[ghost.moveIndex++ % sinLookup.length]) * .25;
       //don't update player destination
       if (ghost.destination){
         if ((Math.abs(ghost.destination.x - ghost.position.x) < 10) && (Math.abs(ghost.destination.y - ghost.position.y) < 10)) {
-          ghost.destination.x = Math.random() * canvas.width;
-          ghost.destination.y = canvas.height / 2 + Math.random() * canvas.height / 2;
+          ghost.destination.x = Math.random() * (canvas.width - 50);
+          ghost.destination.y = canvas.height / 3 + Math.random() * canvas.height * 0.66 - 40;
         }
       }
-      if (++ghost.moveIndex === moveLookup.length) {
+      if (++ghost.moveIndex === sinLookup.length) {
         ghost.moveIndex = 0;
       }
     };
@@ -139,38 +139,38 @@ function draw() {
     const updatePlayerSpeed = function () {
       if (player.input.left) {
         player.speed.x -= player.speedIncrement;
-        //player.speed.x = Math.min(player.speed.x, -1 * player.maxSpeed)
-      }
-      if (player.input.right) {
+      } else if (player.input.right) {
         player.speed.x += player.speedIncrement;
-        //player.speed.x = Math.max(player.speed.x, player.maxSpeed)
+      } else {
+        player.speed.x *= 0.995;
       }
+
       if (player.input.up) {
         player.speed.y -= player.speedIncrement;
-        //player.speed.y = Math.min(player.speed.y, -1 * player.maxSpeed)
-      }
-      if (player.input.down) {
+      } else if (player.input.down) {
         player.speed.y += player.speedIncrement;
-        //player.speed.y = Math.max(player.speed.y, player.maxSpeed)
+      } else {
+        player.speed.y *= 0.995;
       }
+
     }            
 
     const checkCollisions = function(ghost) {
-      if (ghost.position.x >= canvas.width - 50) {
+      if (ghost.position.x >= canvas.width - ghost.size.width) {
         ghost.speed.x = 0;
-        ghost.position.x = canvas.width - 50;
+        ghost.position.x = canvas.width - ghost.size.width;
       }
       if (ghost.position.x <= 0) {
         ghost.speed.x = 0;
         ghost.position.x = 0;
       }
-      if (ghost.position.y >= canvas.height - 50) {
+      if (ghost.position.y >= canvas.height - ghost.size.height) {
         ghost.speed.y = 0;
-        ghost.position.y = canvas.height - 50;
+        ghost.position.y = canvas.height - ghost.size.height;
       }
-      if (ghost.position.y <= 15) {
+      if (ghost.position.y <= 0) {
         ghost.speed.y = 0;
-        ghost.position.y = 15;
+        ghost.position.y = 0;
       }
 
     }
@@ -186,33 +186,33 @@ function draw() {
 
       //draw body
       ctx.beginPath();
-      ctx.moveTo(x, y + 10);
-      ctx.lineTo(x, y + 45);
-      ctx.arc(x + 5, y + 45, 5, Math.PI, 0, true);
-      ctx.arc(x + 15, y + 45, 5, Math.PI, 0, false);
-      ctx.arc(x + 25, y + 45, 5, Math.PI, 0, true);
-      ctx.arc(x + 35, y + 45, 5, Math.PI, 0, false);
-      ctx.arc(x + 45, y + 45, 5, Math.PI, 0, true);
-      ctx.moveTo(x + 0, y + 10);
-      ctx.arc(x + 25, y + 10, 25, Math.PI, false);
-      ctx.lineTo(x + 50, y + 45);
+      ctx.moveTo(x, y + 25);
+      ctx.lineTo(x, y + 60);
+      ctx.arc(x + 5, y + 60, 5, Math.PI, 0, true);
+      ctx.arc(x + 15, y + 60, 5, Math.PI, 0, false);
+      ctx.arc(x + 25, y + 60, 5, Math.PI, 0, true);
+      ctx.arc(x + 35, y + 60, 5, Math.PI, 0, false);
+      ctx.arc(x + 45, y + 60, 5, Math.PI, 0, true);
+      ctx.moveTo(x + 0, y + 25);
+      ctx.arc(x + 25, y + 25, 25, Math.PI, false);
+      ctx.lineTo(x + 50, y + 60);
       ctx.fill();
 
       //draw eyes
       ctx.fillStyle = '#1a1a1a';
       ctx.beginPath();
-      if (ghost.hasLeftEye) {ctx.ellipse(x + 15, y + 9, 3, 6, 0, 0, 2 * Math.PI);}
-      if (ghost.hasRightEye) {ctx.ellipse(x + 35, y + 9, 3, 6, 0, 0, 2 * Math.PI);}      
+      if (ghost.hasLeftEye) {ctx.ellipse(x + 15, y + 24, 3, 6, 0, 0, 2 * Math.PI);}
+      if (ghost.hasRightEye) {ctx.ellipse(x + 35, y + 24, 3, 6, 0, 0, 2 * Math.PI);}      
       ctx.fill();
 
       //draw mouth
-      if (true) {
+      if (false) {
         ctx.beginPath();
-        ctx.arc(x + 25, y - 22, 50, 7 * Math.PI / 12, 5 * Math.PI / 12, true);
+        ctx.arc(x + 25, y - 7, 50, 7 * Math.PI / 12, 5 * Math.PI / 12, true);
         ctx.stroke();
       } else {
         ctx.beginPath();
-        ctx.arc(x + 25, y + 78, 50, 17 * Math.PI / 12, 19 * Math.PI / 12, false);
+        ctx.arc(x + 25, y + 93, 50, 17 * Math.PI / 12, 19 * Math.PI / 12, false);
         ctx.stroke();        
       }
     };
@@ -223,16 +223,24 @@ function draw() {
         hasRightEye : rightEye,
         hasLeftEye : leftEye,
         mood : 'happy',
-        moveIndex : Math.floor(Math.random() * moveLookup.length),
+        moveIndex : Math.floor(Math.random() * sinLookup.length),
+        
+        size : {
+          width : 50,
+          height : 65
+        },
+
         position : {
           x : X,
           y : Y
         },
+
         speed : {
           //pixels to move per frame; negative values change direction
           x : xSpeed,
           y : ySpeed
         },
+        
         destination : {
           x : Math.random() * canvas.width,
           y : Math.random() * canvas.height
@@ -249,13 +257,18 @@ function draw() {
         maxSpeed : (30 / 60),
         speedIncrement : 0.01,
         mood : 'happy',
-        moveIndex : Math.floor(Math.random() * moveLookup.length),
+        moveIndex : Math.floor(Math.random() * sinLookup.length),
         
         input : {
           left : false,
           right : false,
           up : false,
           down : false
+        },
+
+        size : {
+          width : 50,
+          height : 65
         },
 
         position : {
