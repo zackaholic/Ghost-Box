@@ -1,39 +1,54 @@
-const fan = (function (x, y) {
+const Fan = (function () {
   const canvas = document.getElementById('boxCanvas');
   const ctx = canvas.getContext('2d');
 
-  const fan = {};
+  const module = {};
 
-  let on = false;
-  const width = 200;
-  const height = 100;
+  const fan = (function() {
+    const fan = {};
+    let on = false;
+    const width = 180;
+    const height = 100;
+    const x = canvas.width / 2 - width / 2;
+    const y = 0;
 
-  fan.isOn = function () {
-    return on;
-  }
-
-  fan.setOn = function (newState) {
-    on = newState;
-  }
-
-  fan.getBounds = function () {
-    return {
-      x : x,
-      y : y,
-      width : width,
-      height : height
+    fan.isOn = function () {
+      return on;
     }
+
+    fan.setOn = function (newState) {
+      on = newState;
+    }
+
+    fan.getBounds = function () {
+      return {
+        x : x,
+        y : y,
+        width : width,
+        height : height
+      }
+    }
+
+    fan.render = function () {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + width, y);
+      ctx.lineTo(x + width, y + height);
+      ctx.lineTo(x, y + height);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    return fan;
+  })();
+
+  module.getBounds = function() {
+    return fan.getBounds();
   }
 
-  fan.render = function () {
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + width, y);
-    ctx.lineTo(x + width, y + height);
-    ctx.lineTo(x, y + height);
-    ctx.closePath();
-    ctx.stroke();
+  module.updateAndRender = function() {
+    fan.render();
   }
 
-  return fan;
-}(200, 0));
+  return module;
+})();

@@ -1,196 +1,56 @@
+/*
+Ghost prototype contains ghost constructor, render functions. Prototype for player and 
+NPC ghosts.
+*/
 
-
-const Ghosts = (function (numGhosts) {    
-const canvas = document.getElementById('boxCanvas');
-const ctx = canvas.getContext('2d');
-
+const Ghost = (function () {    
+  const canvas = document.getElementById('boxCanvas');
+  const ctx = canvas.getContext('2d');
   const module = {};
 
-  const oscillationRate = 3;  //cycles per second
-  const sinLookup = (function(steps) {
-    const lookup = [];
-    let index = 0;
-    for (i = 0; i <= Math.PI * 2; i+= Math.PI * 2 / steps) {
-      lookup[index++] = Math.sin(i);
-    }
-    return lookup;
-  })(oscillationRate * 60);
 
-  const ghostArray = [];
-  const ghostColor = "rgba(255, 255, 255, 0.6)";
+  module.create = function(X, Y, xSpeed, ySpeed, rightEye, leftEye) {
 
+    this.hasRightEye = rightEye;
+    this.hasLeftEye = leftEye;
+    this.mood = 'happy';
+    //start oscillation on a random index so they don't move in unison
+    //moveIndex should be called oscillateIndex or something
+    this.moveIndex = Math.floor(Math.random() * module.sinLookup.length);
+    this.width = 50;
+    this.height = 65;
+    this.oscillationRate = 3;
+    this.color = "rgba(255, 255, 255, 0.6)";
 
-  const moveGhost = function (ghost) {
-    //set new position, referenced to current position in pixels
-    ghost.position.x += ghost.speed.x;
-    //TODO: all ghosts end up oscillation to the right and below their destination after awhile...
-    //TODO: what's that *.25 do??? Some scaling value? Sheesh.
-    ghost.position.y += ghost.speed.y + (sinLookup[ghost.moveIndex++ % sinLookup.length]) * .25;
-    //don't update player destination
-    if (ghost.destination){
-      if ((Math.abs(ghost.destination.x - ghost.center.x) < 20) && (Math.abs(ghost.destination.y - ghost.center.y) < 20)) {
-        ghost.destination.x = Math.random() * (canvas.width - 50);
-        ghost.destination.y = canvas.height / 3 + Math.random() * canvas.height * 0.66 - 40;
-      }
-    }
-    if (++ghost.moveIndex === sinLookup.length) {
-      ghost.moveIndex = 0;
-    }
-  };
-
-  const updateSpeed = function (ghost) {
-    const destinationSpeed = {
-      x : 0,
-      y : 0        
-    };
-    
-    const avoidPlayerSpeed = {
-      x : 0,
-      y : 0
+    this.position = {
+      x : X,
+      y : Y
     };
 
-    destinationSpeed.x = 0.0001 * (ghost.destination.x - ghost.position.x);
-    destinationSpeed.y = 0.0001 * (ghost.destination.y - ghost.position.y) 
-
-    if ((Math.abs(player.position.x - ghost.position.x) < 100) && (Math.abs(player.position.y - ghost.position.y) < 100)) {
-      avoidPlayerSpeed.x = 0.001 * (player.position.x - ghost.position.x);
-      avoidPlayerSpeed.y = 0.001 * (player.position.y - ghost.position.y);
+    this.getCenter = function () {
+      return {
+        x : this.position.x + this.width / 2,
+        y : this.position.y + this.height / 2
+      };      
     }
 
-    avoidPlayerSpeed.x = Math.abs(avoidPlayerSpeed.x) > 0.2
-                    ? Math.sign(avoidPlayerSpeed.x) * 0.2
-                    : avoidPlayerSpeed.x;
+    this.getBoundingBox = function () {
+      return {
+        x : this.position.x,
+        y : this.position.y,
+        width : this.width,
+        height : this.height 
+      };
+    };
 
-    avoidPlayerSpeed.y = Math.abs(avoidPlayerSpeed.y) > 0.2
-                    ? Math.sign(avoidPlayerSpeed.y) * 0.2
-                    : avoidPlayerSpeed.y;
-
-    destinationSpeed.x = Math.abs(destinationSpeed.x) > 0.2
-                    ? Math.sign(destinationSpeed.x) * 0.2
-                    : destinationSpeed.x;
-
-    destinationSpeed.y = Math.abs(destinationSpeed.y) > 0.2
-                    ? Math.sign(destinationSpeed.y) * 0.2
-                    : destinationSpeed.y;
-
-    ghost.speed.x += destinationSpeed.x - avoidPlayerSpeed.x;
-    ghost.speed.y += destinationSpeed.y - avoidPlayerSpeed.y;
-
-    ghost.speed.x = Math.abs(ghost.speed.x) > 0.3
-                    ? Math.sign(ghost.speed.x) * 0.3
-                    : ghost.speed.x;
-
-    ghost.speed.y = Math.abs(ghost.speed.y) > 0.3
-                    ? Math.sign(ghost.speed.y) * 0.3
-                    : ghost.speed.y;
-
+    this.speed = {
+      //pixels to move per frame; negative values change direction
+      x : xSpeed,
+      y : ySpeed
+    };
   };
 
-  const updatePlayerSpeed = function () {
-    if (player.input.left) {
-      player.speed.x -= player.speedIncrement;
-    } else if (player.input.right) {
-      player.speed.x += player.speedIncrement;
-    } else {
-      player.speed.x *= 0.995;
-    }
-
-    if (player.input.up) {
-      player.speed.y -= player.speedIncrement;
-    } else if (player.input.down) {
-      player.speed.y += player.speedIncrement;
-    } else {
-      player.speed.y *= 0.995;
-    }
-
-  }            
-
-  const checkCollision = function (a, b) {
-    //check if a is fully inside b
-    if (a.x < b.x + b.width &&
-      a.x + a.width > b.x &&
-      a.y < b.y + b.height &&
-      a.height + a.y > b.y) {
-      return true;
-    }
-    return false;
-  }
-
-  const checkCollisionWithFan = function () {
-    let fanCollision = false;
-    ghostArray.forEach(function checkFanCollision(g) {
-      if (checkCollision(g, fan)) {
-        fanCollision = true;
-        g.mood = 'sad';
-        g.speed.y -= 1;
-      }
-    });
-    if (fanCollision) {
-      //send fan command to server
-    }
-  }
-
-  const checkCollisionWithPlayer = function () {
-    let playerCollision = false;
-    ghostArray.forEach(function checkPlayerCollision(g) {
-        if (Util.detectContact(player.influenceBox, g.boundingBox)) {
-        g.mood = 'sad';
-        playerCollision = true;
-      } else {
-        g.mood = 'happy';
-      }
-    });
-    if (playerCollision) {
-      player.mood = 'happy';
-    } else {
-      player.mood = 'sad';
-    }
-  }
-
-  const checkCollisions = function (ghost) {
-    //check for collision with walls
-    if (ghost.position.x >= canvas.width - ghost.width) {
-      ghost.speed.x = 0;
-      ghost.position.x = canvas.width - ghost.width;
-    }
-    if (ghost.position.x <= 0) {
-      ghost.speed.x = 0;
-      ghost.position.x = 0;
-    }
-    if (ghost.position.y >= canvas.height - ghost.height) {
-      ghost.speed.y = 0;
-      ghost.position.y = canvas.height - ghost.height;
-    }
-    if (ghost.position.y <= 0) {
-      ghost.speed.y = 0;
-      ghost.position.y = 0;
-    }
-  }
-
-  const showDebug = function (ghost) {
-    ctx.strokeStyle = 'rgb(255, 100, 100)';
-    
-    if (!ghost.player) {
-      ctx.beginPath();
-      ctx.moveTo(ghost.center.x, ghost.center.y);
-      ctx.lineTo(ghost.destination.x, ghost.destination.y);
-      ctx.stroke();
-      //ctx.strokeText('x: ' + ghost.speed.x.toPrecision(2) + ' y: ' + ghost.speed.y.toPrecision(2), ghost.position.x, ghost.position.y);
-      ctx.beginPath();
-      ctx.rect(ghost.boundingBox.x, ghost.boundingBox.y,
-               ghost.width, ghost.height);
-      ctx.stroke();
-    } else {
-      ctx.beginPath();
-      ctx.rect(ghost.influenceBox.x, ghost.influenceBox.y,
-               ghost.influenceBox.width , ghost.influenceBox.height);
-      ctx.stroke();
-    }
-
-    ctx.strokeStyle = '#1a1a1a';    
-  }
-
-  const drawGhost = function (ghost) {
+  module.render = function (ghost) {
     const x = ghost.position.x;
     const y = ghost.position.y;
 
@@ -220,6 +80,7 @@ const ctx = canvas.getContext('2d');
     ctx.fill();
 
     //draw mouth
+    ctx.strokeStyle = '#1a1a1a';
     if (ghost.mood === 'happy') {
       ctx.beginPath();
       ctx.arc(x + 25, y - 7, 50, 7 * Math.PI / 12, 5 * Math.PI / 12, true);
@@ -231,172 +92,15 @@ const ctx = canvas.getContext('2d');
     }
   };
 
-
-  const createNewGhost = function(X, Y, xSpeed, ySpeed, rightEye, leftEye) {
-    const ghost = {
-      hasRightEye : rightEye,
-      hasLeftEye : leftEye,
-      mood : 'happy',
-      moveIndex : Math.floor(Math.random() * sinLookup.length),
-      width : 50,
-      height : 65,
-
-      //set position()
-
-      position : {
-        x : X,
-        y : Y
-      },
-
-      get center() {return {
-        x : this.position.x + this.width / 2, 
-        y : this.position.y + this.height / 2}
-      },
-
-      get boundingBox() {return {
-        x: this.position.x,
-        y: this.position.y,
-        width: this.width,
-        height: this.height }
-      },
-
-      speed : {
-        //pixels to move per frame; negative values change direction
-        x : xSpeed,
-        y : ySpeed
-      },
-      
-      destination : {
-        x : Math.random() * canvas.width,
-        y : Math.random() * canvas.height
-      }
+  module.sinLookup = (function(steps) {
+    const lookup = [];
+    let index = 0;
+    for (i = 0; i <= Math.PI * 2; i+= Math.PI * 2 / steps) {
+      //scale down to %25 or they look like they're bouncing
+      lookup[index++] = Math.sin(i) * 0.25;
     }
-    return ghost;
-  }
-
-  const createPlayer = function (X, Y, rightEye, leftEye) {
-    const player = {
-      player : true,
-      hasRightEye : rightEye,
-      hasLeftEye : leftEye,
-      color : 'rgba(255, 220, 220, 0.6)',
-      maxSpeed : (30 / 60),
-      speedIncrement : 0.01,
-      mood : 'happy',
-      moveIndex : Math.floor(Math.random() * sinLookup.length),
-      
-      influenceDistance: 50, 
-
-      input : {
-        left : false,
-        right : false,
-        up : false,
-        down : false
-      },
-
-      width : 50,
-      height : 65,
-      
-      get center() { return {
-        x : this.position.x + this.width / 2, 
-        y : this.position.y + this.height / 2}
-      },
-
-      get influenceBox() { return {
-        x: this.position.x - this.influenceDistance,
-        y: this.position.y - this.influenceDistance,
-        width: this.width + this.influenceDistance * 2,
-        height: this.height + this.influenceDistance * 2}
-      },
-
-      position : {
-        x : X,
-        y : Y
-      },
-      
-      speed : {
-        //pixels to move per frame; negative values change direction
-        x : 0,
-        y : 0
-      }
-    }
-    return player;
-  }
-
-
-  for (let i = 0; i < numGhosts; i++) {
-    ghostArray[i] = createNewGhost(
-                40 + Math.random() * (canvas.width - 40),
-                canvas.height / 2 + Math.random() * (canvas.height / 2),
-                0, 
-                0, 
-                (Math.random() < 0.1 ? false : true),
-                (Math.random() < 0.1 ? false : true));
-  }
-
-  const player = createPlayer(
-                canvas.width / 2 - 20, 
-                canvas.height - 100,
-                (Math.random() < 0.1 ? false : true),
-                (Math.random() < 0.1 ? false : true));
-
-  document.addEventListener('keydown', function(event) {
-    event.preventDefault();
-
-    switch (event.keyCode) {
-      case 37:
-        player.input.left = true;
-        break;
-      case 38:
-        player.input.up = true;
-        break;
-      case 39:
-        player.input.right = true;
-        break;
-      case 40: 
-        player.input.down = true;
-        break;
-    }
-  });
-
-  document.addEventListener('keyup', function(event) {
-    event.preventDefault();
-
-    switch (event.keyCode) {
-      case 37:
-        player.input.left = false;
-        break;
-      case 38:
-        player.input.up = false;
-        break;
-      case 39:
-        player.input.right = false;
-        break;
-      case 40: 
-        player.input.down = false;
-        break;
-    }
-  });
-
-  module.update = function () {
-    updatePlayerSpeed();
-    moveGhost(player);
-    checkCollisions(player);
-    drawGhost(player);
-    showDebug(player);
-
-    checkCollisionWithPlayer();
-      checkCollisionWithFan();
-//now this whole section needs reworking
-    ghostArray.forEach(function updateAndDrawGhosts (g) {
-      showDebug(g);
-      updateSpeed(g);
-      moveGhost(g);
-      checkCollisions(g);
-      //checkCollisionWithFan();
-      drawGhost(g);
-    });
-  }
+    return lookup;
+  })(180);
 
   return module;
-}(2));
+}());
