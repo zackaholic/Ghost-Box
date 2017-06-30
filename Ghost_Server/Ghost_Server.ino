@@ -15,6 +15,11 @@ ESP8266WebServer server(80);
 uint16_t fanCountdown = 0;
 uint8_t fanOpenState = 0; //closed
 
+void sendTestResponse() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.send(200, "okay");
+}
+
 void serveMain() {
   File root = SPIFFS.open("/main.html", "r");
   if (!root) {
@@ -26,20 +31,26 @@ void serveMain() {
 }
 
 void fanOn() {
- digitalWrite(3, HIGH); 
+  digitalWrite(3, HIGH); 
+  Serial.println("fanOn");
+  sendTestResponse();
 }
 
 void fanOff() {
   digitalWrite(3, LOW);
+  Serial.println("fanOff");
+  sendTestResponse();  
 }
 
 void fanOpen() {
+  Serial.println("fanOpen");  
   if (fanOpenState == 0) {
     fanCountdown = millis() + 1000;
     servo.write(90);    
   } else {
     fanCountdown += 1000;
   }
+  sendTestResponse();  
 }
 
 void fanClose() {
