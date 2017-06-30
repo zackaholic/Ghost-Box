@@ -30,7 +30,7 @@ const NPC = (function () {
       npcs.push(npc);
     }
     return npcs;
-  })(10);
+  })(12);
 
   const setDestination = function(npc) {
     const gb = npc.getBoundingBox();
@@ -51,9 +51,10 @@ const NPC = (function () {
       if (++g.moveIndex === Ghost.sinLookup.length) {
         g.moveIndex = 0;
       }
-      //if ghost was blown out the fan, delete it
+      //if ghost was blown out the fan, delete it, send open command
       if (g.position.y < -g.height) {
         gArray.splice(index, 1);
+        Fan.open();
       }
     });
   };
@@ -117,6 +118,24 @@ const NPC = (function () {
     });
   };
 
+  const checkFanProximity = function (npcs) {
+    let fanProximity = false;
+    const fanThreshold = 150;
+    const fb = Fan.getBounds();
+    fb.height = fanThreshold;
+    npcs.forEach(function(g) {
+      //necessary to check every ghost here? Break if proximity detected?
+      if (Util.detectContact(g.getBoundingBox(), fb)) {
+        fanProximity = true;
+      }
+    });
+    if (fanProximity) {
+      Fan.on();
+    } else {
+      Fan.off();
+    }
+  }
+
   const checkFanCollision = function (npcs) {
     let fanCollision = false;
     npcs.forEach(function (g) {
@@ -129,9 +148,9 @@ const NPC = (function () {
         g.inFan = false;
       }
     });
-    if (fanCollision) {
-      //send fan command to server
-    }
+    if (fanCollision) { 
+
+     }
   }
 
   const checkWallCollisions = function(npcs) {
@@ -197,6 +216,7 @@ const NPC = (function () {
     move(ghosts);
     checkWallCollisions(ghosts);
     checkPlayerCollision(ghosts, Player.player);
+    checkFanProximity(ghosts);
     checkFanCollision(ghosts);
     render(ghosts);
   }
