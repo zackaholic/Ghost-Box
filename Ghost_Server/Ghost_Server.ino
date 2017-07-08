@@ -12,6 +12,9 @@ IPAddress apIP(192, 168, 1, 1);
 DNSServer dnsServer;
 ESP8266WebServer server(80);
 
+const uint8_t fanOpen = 90;
+const uint8_t fanClosed = 0;
+
 uint32_t fanCountdown = 0;
 uint8_t fanOpenState = 0; //closed
 
@@ -39,16 +42,16 @@ void fanOpen() {
   if (fanOpenState == 0) {
     fanOpenState = 1;
     fanCountdown = millis() + 500;
-    servo.write(90);    
+    servo.write(fanOpen);    
   } else {
-    fanCountdown += 1000;
+    fanCountdown += 500;
   }
   server.send(200, "text/html", "okay");
 }
 
 void fanClose() {
   fanOpenState = 0;
-  servo.write(0);
+  servo.write(fanClosed);
 }
 
 void handleNotFound(){
@@ -59,7 +62,7 @@ void handleNotFound(){
 void setup(void){
   Serial.begin(115200);
 
-  servo.attach(2);
+  servo.attach(4);
   pinMode(5, OUTPUT); //D1 on the module :(
 
 //////////////////////wifi setup
@@ -116,8 +119,9 @@ void setup(void){
   if (!SPIFFS.begin()) {
     Serial.println("Failed to mount file system");
   }
-
-
+  //make sure everything starts in correct state
+  servo.write(fanClosed);
+  digitalWrite(5, LOW);
 }
 
 void loop(void){

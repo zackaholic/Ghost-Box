@@ -11,10 +11,7 @@ const Player = (function() {
     const p = new Ghost.create(
           40 + Math.random() * (canvas.width - 40),
           canvas.height / 2 + Math.random() * (canvas.height / 2),
-          0, 
-          0, 
-          (Math.random() < 0.1 ? false : true),
-          (Math.random() < 0.1 ? false : true));
+          true);
     
     //now add p-specific parameters
     p.color = "rgba(255, 200, 200, 0.6)";
@@ -154,7 +151,7 @@ const Player = (function() {
     player.updateSpeed();
     player.move();
     player.checkWallCollisions();
-    Ghost.render(player);
+    player.render();
   }
 
 

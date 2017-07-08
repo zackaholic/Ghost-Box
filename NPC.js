@@ -14,10 +14,7 @@ const NPC = (function () {
       const npc = new Ghost.create(
                 40 + Math.random() * canvas.width - 80,
                 canvas.height / 2 + Math.random() * (canvas.height / 2),
-                0, 
-                0, 
-                (Math.random() < 0.1 ? false : true),
-                (Math.random() < 0.1 ? false : true));
+                false);
       
       //now add npc-specific parameters
       npc.destination = {
@@ -30,12 +27,12 @@ const NPC = (function () {
       npcs.push(npc);
     }
     return npcs;
-  })(12);
+  })(20);
 
   const setDestination = function(npc) {
     const gb = npc.getBoundingBox();
     npc.destination.x = gb.width + Math.random() * (canvas.width - gb.width * 2);
-    npc.destination.y = canvas.height * 0.33 + Math.random() * (canvas.height * 0.66) ;    
+    npc.destination.y = canvas.height * 0.33 + Math.random() * (canvas.height * 0.66) - npc.height;    
   }
 
   const move = function (npcs) {
@@ -61,7 +58,7 @@ const NPC = (function () {
 
   const render = function (npcs) {
     npcs.forEach(function(g) {
-      Ghost.render(g);
+      g.render();
     });
   }
 
@@ -82,8 +79,8 @@ const NPC = (function () {
 
       if (Util.detectContact(g.getBoundingBox(), player.getInfluenceBox())) {
 
-        avoidPlayerSpeed.x = 0.0005 * (player.position.x - g.position.x);
-        avoidPlayerSpeed.y = 0.0005 * (player.position.y - g.position.y);
+        avoidPlayerSpeed.x = 0.0001 * (player.position.x - g.position.x);
+        avoidPlayerSpeed.y = 0.0001 * (player.position.y - g.position.y);
       }
 
       avoidPlayerSpeed.x = Math.abs(avoidPlayerSpeed.x) > 0.2
@@ -141,7 +138,7 @@ const NPC = (function () {
     npcs.forEach(function (g) {
       if (Util.detectContact(g.getBoundingBox(), Fan.getBounds())) {
         fanCollision = true;
-        g.mood = 'sad';
+        g.mood = 'Sad';
         g.inFan = true;
         g.speed.y -= 1;
       } else {
@@ -181,16 +178,16 @@ const NPC = (function () {
     let playerCollision = false;
     npcs.forEach(function(g) {
       if (Util.detectContact(player.getInfluenceBox(), g.getBoundingBox())) {
-        g.mood = 'sad';
+        g.mood = 'Sad';
         playerCollision = true;
       } else {
-        g.mood = 'happy';
+        g.mood = 'Happy';
       }
     });
     if (playerCollision) {
-      player.mood = 'happy';
+      player.mood = 'Happy';
     } else {
-      player.mood = 'sad';
+      player.mood = 'Sad';
     }
   }
 

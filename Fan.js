@@ -32,7 +32,7 @@ const Fan = (function () {
 
   fan.open = function () {
     //check if server is ready? 
-    Util.post('http://10.0.0.4:3000/fanOpen', 'open').then(function(res) {
+    Util.post('http://10.0.0.28/fanOpen', 'open').then(function(res) {
       console.log(res);
     }, function (err) {
       console.log(err);
@@ -43,7 +43,7 @@ const Fan = (function () {
     //check if server is ready? 
     if (!fanOn) {
       fanOn = true;
-      Util.post('http://10.0.0.4:3000/fanOn', 'on').then(function(res) {
+      Util.post('http://10.0.0.28/fanOn', 'on').then(function(res) {
         console.log(res);
       }, function (err) {
         console.log(err);
@@ -55,7 +55,7 @@ const Fan = (function () {
     //check if server is ready? 
     if (fanOn) {
       fanOn = false;
-      Util.post('http://10.0.0.4:3000/fanOff', 'off').then(function(res) {
+      Util.post('http://10.0.0.28/fanOff', 'off').then(function(res) {
         console.log(res);
       }, function (err) {
         console.log(err);

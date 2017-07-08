@@ -50,6 +50,28 @@ Util.detectEncompass = function (a, b) {
   return false;
 }
 
+// function get(url, data) {
+//   return new Promise(function (resolve, reject) {
+//     let req = new XMLHttpRequest();
+//     req.open('GET', url);
+
+//     req.onload = function() {
+//       if (req.status === 200) {
+//         resolve(req.response);
+//       }
+//       else {
+//         reject(Error(req.statusText));
+//       }
+//     };
+
+//     req.onerror = function() {
+//       reject(Error('Error connecting to server'));
+//     };
+
+//     req.send();
+//   });
+// }
+
 Util.post = function (url, data) {
   return new Promise(function(resolve, reject) {
     let req = new XMLHttpRequest();
