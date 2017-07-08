@@ -59,7 +59,6 @@ const Player = (function() {
     p.move = function() {
       //set new position, referenced to current position in pixels
       this.position.x += this.speed.x;
-      //TODO: investigate that dubious *.25  
       this.position.y += this.speed.y + (Ghost.sinLookup[this.moveIndex++ % Ghost.sinLookup.length]);
 
       if (++this.moveIndex === Ghost.sinLookup.length) {
