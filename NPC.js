@@ -19,7 +19,7 @@ const NPC = (function () {
       //now add npc-specific parameters
       npc.destination = {
         x : npc.width + Math.random() * (canvas.width - npc.width * 2),
-        y : canvas.height * 0.33 + Math.random() * (canvas.height * 0.66)    
+        y : canvas.height * 0.33 + Math.random() * (canvas.height * 0.66) - npc.height
       };
 
       npc.inFan = false;
@@ -27,7 +27,7 @@ const NPC = (function () {
       npcs.push(npc);
     }
     return npcs;
-  })(20);
+  })(10);
 
   const setDestination = function(npc) {
     const gb = npc.getBoundingBox();
