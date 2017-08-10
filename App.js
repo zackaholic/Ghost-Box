@@ -12,14 +12,9 @@ function draw() {
       Box.render();
       Player.updateAndRender()
       //Player.showDebug();
-
-
       NPC.updateAndRender();
       //NPC.showDebug();
-
-      //Fan.updateAndRender();
     }
-    
     main(); // Start the cycle
   })();
 }

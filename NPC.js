@@ -122,6 +122,7 @@ const NPC = (function () {
     fb.height = fanThreshold;
     npcs.forEach(function(g) {
       //necessary to check every ghost here? Break if proximity detected?
+      //could use npcs.every() or npcs.some()
       if (Util.detectContact(g.getBoundingBox(), fb)) {
         fanProximity = true;
       }

@@ -8,15 +8,18 @@
 Servo servo;
 
 const byte DNS_PORT = 53;
+const byte FAN = 5;
 IPAddress apIP(192, 168, 1, 1);
 DNSServer dnsServer;
 ESP8266WebServer server(80);
 
-const uint8_t fanOpen = 90;
-const uint8_t fanClosed = 0;
+const uint8_t servoOpen = 0;
+const uint8_t servoClosed = 180;
 
-uint32_t fanCountdown = 0;
+uint32_t fanCloseCountdown = 0;
+uint32_t fanOffCountdown = 0;
 uint8_t fanOpenState = 0; //closed
+uint8_t fanOffOnTimer = 0;
 
 void serveMain() {
   File root = SPIFFS.open("/main.html", "r");
@@ -29,33 +32,47 @@ void serveMain() {
 }
 
 void fanOn() {
-  digitalWrite(5, HIGH); 
+  digitalWrite(FAN, HIGH); 
+  fanOffOnTimer = 0;
   server.send(200, "text/html", "okay");
 }
 
+void turnFanOff() {
+  Serial.println("Fan off");
+  digitalWrite(FAN, LOW);
+}
+
 void fanOff() {
-  digitalWrite(5, LOW);
+  if (fanOpenState == 0) {
+    turnFanOff();
+  } else {
+    fanOffOnTimer = 1;
+    //hack to keep the fan from turning off immediately
+    fanOffCountdown = fanCloseCountdown + 500;
+  }
   server.send(200, "text/html", "okay");
 }
 
 void fanOpen() {
   if (fanOpenState == 0) {
     fanOpenState = 1;
-    fanCountdown = millis() + 500;
-    servo.write(fanOpen);    
+    fanCloseCountdown = millis() + 500;
+    servo.write(servoOpen);    
   } else {
-    fanCountdown += 500;
+    fanCloseCountdown += 500;
   }
   server.send(200, "text/html", "okay");
 }
 
 void fanClose() {
   fanOpenState = 0;
-  servo.write(fanClosed);
+  servo.write(servoClosed);
+  fanOffCountdown = millis() + 500;
+
 }
 
 void handleNotFound(){
-  server.send(404, "text/html", "<h1>Error 404</h1><p><h2>What did you think you would find?</h2></p>");
+  server.send(404, "text/html", "<h1>Error 404</h1><p><h2>Hi, nothing here.</h2></p>");
 }
 
 
@@ -63,8 +80,11 @@ void setup(void){
   Serial.begin(115200);
 
   servo.attach(4);
-  pinMode(5, OUTPUT); //D1 on the module :(
-
+  pinMode(FAN, OUTPUT); //D1 on the module :(
+  
+  servo.write(servoClosed);
+  digitalWrite(FAN, LOW);
+  
 //////////////////////wifi setup
 //  WiFi.mode(WIFI_AP);
 //  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
@@ -81,11 +101,11 @@ void setup(void){
 //
 //  // start DNS server for a specific domain name
 //  dnsServer.start(DNS_PORT, "www.pov.com", apIP);
-  const char* ssid = "HOME-E2C2";
-  const char* password = "32F935F57DFDB323";
+  const char* ssid = "Sonic-4251";
+  const char* password = "4x8wwb45p43v";
   WiFi.begin(ssid, password);
 
-  IPAddress ip(10, 0, 0, 28); // where xx is the desired IP Address
+  IPAddress ip(192, 168, 42, 80); // where xx is the desired IP Address
   IPAddress gateway(10, 0, 0, 1); // set gateway to match your network
   //Serial.print(F("Setting static ip to : "));
   Serial.println(ip);
@@ -119,9 +139,8 @@ void setup(void){
   if (!SPIFFS.begin()) {
     Serial.println("Failed to mount file system");
   }
-  //make sure everything starts in correct state
-  servo.write(fanClosed);
-  digitalWrite(5, LOW);
+  
+
 }
 
 void loop(void){
@@ -129,10 +148,15 @@ void loop(void){
   server.handleClient();
 
   if (fanOpenState == 1) {
-    if (millis() >= fanCountdown) {
+    if (millis() >= fanCloseCountdown) {
       fanClose();
     }
   }
-    
+  if (fanOffOnTimer == 1) {
+    if (millis() >= fanOffCountdown) {
+      turnFanOff();
+      fanOffOnTimer = 0;
+    }
+  }    
   delay(1); 
 }

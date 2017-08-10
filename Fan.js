@@ -19,7 +19,7 @@ const Fan = (function () {
       if (serverReady === true && Date.now() - lastCall > rate) {
         serverReady = false;
         lastCall = Date.now();
-        Util.get('http://10.0.0.4:3000/fanSpeed').then(function(res) {
+        Util.get('http://192.168.42.80/fanSpeed').then(function(res) {
           console.log(res);
           serverReady = true;
         }, function (err) {
@@ -32,7 +32,7 @@ const Fan = (function () {
 
   fan.open = function () {
     //check if server is ready? 
-    Util.get('http://10.0.0.28/fanOpen').then(function(res) {
+    Util.get('http://192.168.42.80/fanOpen').then(function(res) {
       console.log(res);
     }, function (err) {
       console.log(err);
@@ -43,7 +43,7 @@ const Fan = (function () {
     //check if server is ready? 
     if (!fanOn) {
       fanOn = true;
-      Util.get('http://10.0.0.28/fanOn').then(function(res) {
+      Util.get('http://192.168.42.80/fanOn').then(function(res) {
         console.log(res);
       }, function (err) {
         console.log(err);
@@ -55,7 +55,7 @@ const Fan = (function () {
     //check if server is ready? 
     if (fanOn) {
       fanOn = false;
-      Util.get('http://10.0.0.28/fanOff').then(function(res) {
+      Util.get('http://192.168.42.80/fanOff').then(function(res) {
         console.log(res);
       }, function (err) {
         console.log(err);
